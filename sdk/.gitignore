@@ -1,1 +1,5 @@
-sysroot
+bbb*
+sysroots
+version-armv7at2hf-neon-poky-linux-gnueabi
+site-config-armv7at2hf-neon-poky-linux-gnueabi
+environment-setup-armv7at2hf-neon-poky-linux-gnueabi
