@@ -95,9 +95,72 @@ static void __exit my_kernel_module_exit(void){
 > LKM that aren't officially signoff by linux.org are called out of tree modules, otherwise in tree modules.
 
 ##### The command used to build an external module is?
-```make
+```bash
     $ make  -C <path/to/linux/kernel/tree> M=<path/to/external/module> [target]
-``
+```
 > P.S. It's a must to trigger the top-level-Makefile (linux kernel source tree), that takes place with this option -C --- "make -C". which means go to the following path and execute the make target over there and then the top-level-Makefile would eventually be directed to the local Makefile. [top leve Makefile] -> [local Makefile]  
 > [target]: it could be one of the following (modules, modules_install, clean, help)  
 
+##### Steps to create a self contained LDD project?
+> 0) Source the Yocto SDK (important)  
+```bash
+source ./sdk/environment-setup-armv7at2hf-neon-poky-linux-gnueabi
+# verify compiler is available
+which arm-poky-linux-gnueabihf-gcc || which arm-poky-linux-gnueabi-gcc
+```
+> 1) Copy the kernel source into the repo (KDIR/source)
+```bash
+mkdir -p KDIR/source
+rsync -av --delete ../BBB-Yocto-Build/build/tmp/work-shared/beaglebone/kernel-source/ KDIR/source/
+```
+
+> 2) Copy the kernel build artifacts from the Yocto build
+```bash
+mkdir -p KDIR/out
+YOCTO_BUILD=../BBB-Yocto-Build/build/tmp/work/beaglebone-poky-linux-gnueabi/linux-bb.org/6.12.34+git/build
+# copy .config into KDIR/out (so the out tree has the same config)
+cp -v ${YOCTO_BUILD}/.config KDIR/out/ || echo "Warning: .config not found in Yocto build"
+
+# copy generated headers (if present) into out/include/generated
+mkdir -p KDIR/out/include
+rsync -av --delete ${YOCTO_BUILD}/include/generated/ KDIR/out/include/generated/ || echo "Warning: include/generated not found"
+
+# copy Module.symvers into the out tree
+cp -v ${YOCTO_BUILD}/Module.symvers KDIR/out/ || echo "Warning: Module.symvers not found in Yocto build"
+```
+
+> 3) Prepare the out-of-tree build directory (KDIR/out)
+```bash
+cd KDIR/source
+
+# ensure you're using the cross toolchain prefix (short form, environment has it)
+# we use the prefix without the trailing basename because the env provides that in PATH
+CROSS_PREFIX=arm-poky-linux-gnueabihf-   # or arm-poky-linux-gnueabi- depending on SDK
+
+# run non-interactive olddefconfig in the *output* tree (O=)
+make O=../out ARCH=arm CROSS_COMPILE=${CROSS_PREFIX} olddefconfig
+
+# prepare the output tree (generates auto.conf, autoconf.h etc in KDIR/out)
+make O=../out ARCH=arm CROSS_COMPILE=${CROSS_PREFIX} prepare modules_prepare
+
+cd ../../
+```
+
+> 4) Verify out tree is ready  
+
+> 5) Build your module out-of-tree  
+```bash
+Summary (short)
+
+source SDK.
+
+rsync kernel source into KDIR/source.
+
+copy .config, include/generated/ (optional), and Module.symvers from Yocto into KDIR/out.
+
+run make -C KDIR/source O=KDIR/out olddefconfig and make -C KDIR/source O=KDIR/out prepare modules_prepare.
+
+build out-of-tree: make -C KDIR/source O=KDIR/out M=drivers/yourmod ARCH=arm CROSS_COMPILE=arm-...- modules
+
+copy resulting .ko from KDIR/out/... to your builds/ if desired.
+```
