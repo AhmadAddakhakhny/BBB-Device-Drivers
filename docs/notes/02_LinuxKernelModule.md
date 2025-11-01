@@ -172,6 +172,9 @@ copy resulting .ko from KDIR/out/... to your builds/ if desired.
 > make -C /lib/modules/6.8.0-86-generic/build M=${PWD} modules
 > make -C /lib/modules/6.8.0-86-generic/build M=${PWD} clean
 
+##### Copy x86 headers, resolving symlinks (important!)
+> $cp -aL /usr/src/linux-headers-$(uname -r)/* KDIR/x86/
+
 ##### How to insert/remove a module?
 > sudo insmod main.ko  
 > sudo rmmod main.ko  
