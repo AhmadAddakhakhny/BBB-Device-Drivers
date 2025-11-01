@@ -164,3 +164,14 @@ build out-of-tree: make -C KDIR/source O=KDIR/out M=drivers/yourmod ARCH=arm CRO
 
 copy resulting .ko from KDIR/out/... to your builds/ if desired.
 ```
+
+##### How to build for x86?
+> check the kernel source and header location $ uname -r => 6.8.0-86-generic
+> lib/modules/6.8.0-86-generic
+> you should build your module against this directory
+> make -C /lib/modules/6.8.0-86-generic/build M=${PWD} modules
+> make -C /lib/modules/6.8.0-86-generic/build M=${PWD} clean
+
+##### How to insert/remove a module?
+> sudo insmod main.ko  
+> sudo rmmod main.ko  
