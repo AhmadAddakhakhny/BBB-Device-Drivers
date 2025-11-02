@@ -178,3 +178,8 @@ copy resulting .ko from KDIR/out/... to your builds/ if desired.
 ##### How to insert/remove a module?
 > sudo insmod main.ko  
 > sudo rmmod main.ko  
+> modinfo main.ko  
+
+##### What is in-tree kernel module?
+> placing the kernel module under /kenel-sources/drivers directory.  
+> mostlikely, I would go for this approach if I want to push it to upstream linux.org or BSP.  
