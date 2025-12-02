@@ -105,3 +105,15 @@ int alloc_chrdev_region(
     // compose  major and minor 
     dev_t dev_num = MKDEV(int major, int minor);
 ```
+### What does the Major numbers refer to?
+> The max major number (4095 --> 12 bits) determines the max num. of independent device classes that can exist.  
+
+| Major   | Class / Driver                 |
+| ------- | ------------------------------ |
+| 4       | tty devices                    |
+| 8       | SCSI disk devices              |
+| 89      | I²C bus devices                |
+| 200–254 | dynamic / experimental drivers |
+
+### What does the Minor numbers refer to?
+> Each major number can support (1,048,576 --> 20 bits) minors.
