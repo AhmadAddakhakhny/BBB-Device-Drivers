@@ -1,6 +1,8 @@
 #include<linux/module.h>
 #include<linux/fs.h>
 #include <linux/cdev.h>
+#include <linux/device.h>
+
 
 #define DEV_MEM_SIZE    512
 
@@ -13,23 +15,32 @@ dev_t device_number;
 /* cdev variable */
 struct cdev pcd_cdev;
 
+struct class* class_pcd;
+
+struct device* pcd_device;
+
 int pcd_open (struct inode *inode, struct file *filp) {
+    pr_info("Open was successful!\n");
     return 0;
 }
 
 int pcd_release (struct inode *inode, struct file *filp) {
+    pr_info("Close was successful!\n");
     return 0;
 }
 
 loff_t pcd_lseek (struct file *filp, loff_t off, int whence) {
+    pr_info("lseek was successful!\n");
     return 0;
 }
 
 ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos) {
+    pr_info("Read was successful!\n");
     return 0;
 }
 
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos) {
+    pr_info("Rrite was successful!\n");
     return 0;
 }
 
@@ -45,7 +56,7 @@ struct file_operations pcd_fops = {
 
 static int __init pcd_driver_init (void) {
     // 1. Dynamically allocate a device number
-    alloc_chrdev_region(&device_number, 0, 1, "pcd");
+    alloc_chrdev_region(&device_number, 0, 1, "pcd_devices");
 
     // 2. initialize the cdev structure with fops
     cdev_init(&pcd_cdev, &pcd_fops);
@@ -54,12 +65,24 @@ static int __init pcd_driver_init (void) {
     // 3. register a device (cdev struture) with VFS
     cdev_add(&pcd_cdev, device_number, 1);
 
-    pr_info("Hello, World from LKM!\n");
+    // 4.1 create device class under /sys/class/
+    class_pcd = class_create("pcd_class");
+
+    // 4.2 populate device file info under /sys/class/
+    pcd_device = device_create(class_pcd, NULL, device_number, NULL, "pcd");
+
+    pr_info("Module init was successful!\n");
     return 0;
 }
 
 static void __exit pcd_driver_cleanup (void) {
-    pr_info ("Good bye, World from LKM!\n");
+
+    device_destroy(class_pcd, device_number);
+    class_destroy(class_pcd);
+    cdev_del(&pcd_cdev);
+    unregister_chrdev_region(device_number, 1);
+
+    pr_info ("pcd cleanup was successful!\n");
 }
 
 module_init(pcd_driver_init);
