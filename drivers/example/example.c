@@ -3,8 +3,15 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 
-
+/* MACROS */
 #define DEV_MEM_SIZE    512
+
+/* Function prototypes */
+int pcd_open (struct inode *inode, struct file *filp);
+int pcd_release (struct inode *inode, struct file *filp);
+loff_t pcd_lseek (struct file *filp, loff_t off, int whence);
+ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos);
+ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos);
 
 /* Pseudo device's memory */
 char device_buffer[DEV_MEM_SIZE];
@@ -25,13 +32,46 @@ int pcd_open (struct inode *inode, struct file *filp) {
 }
 
 int pcd_release (struct inode *inode, struct file *filp) {
-    pr_info("Close was successful!\n");
+    pr_info("Release was successful!\n");
     return 0;
 }
 
-loff_t pcd_lseek (struct file *filp, loff_t off, int whence) {
-    pr_info("lseek was successful!\n");
-    return 0;
+loff_t pcd_lseek (struct file *filp, loff_t offset, int whence) {
+    pr_info("lseek requested!\n");
+    pr_info("Current file position = %lld \n", filp->f_pos);
+
+    loff_t sz_total = 0;
+    switch (whence) {
+        case SEEK_SET:
+            if (offset > DEV_MEM_SIZE || offset < 0) 
+                return -EINVAL;
+            
+            filp->f_pos = offset;
+            break;
+
+        case SEEK_CUR:
+            sz_total = filp->f_pos + offset;
+            if (sz_total > DEV_MEM_SIZE || offset < 0)
+                return -EINVAL;
+
+            filp->f_pos = sz_total;
+            break;
+
+        case SEEK_END:
+            sz_total = DEV_MEM_SIZE + offset;
+            if (sz_total > DEV_MEM_SIZE || offset < 0)
+                return -EINVAL;
+
+            filp->f_pos = sz_total;
+            break;
+
+        default:
+            return -EINVAL; /* invalid whence value */
+    }
+
+    pr_info("Updated file position = %lld \n", filp->f_pos);
+
+    return filp->f_pos;
 }
 
 ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos) {
@@ -45,7 +85,7 @@ ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_
     }
 
     /* Copy to user */
-    if (copy_to_user(buff, device_buffer[*f_pos], count)) {
+    if (copy_to_user(buff, &device_buffer[*f_pos], count)) {
         return -EFAULT;
     }
 
@@ -60,8 +100,30 @@ ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_
 }
 
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos) {
-    pr_info("Rrite was successful!\n");
-    return 0;
+
+    pr_info("Write requested for %zu bytes \n", count);
+    pr_info("Current file position = %lld \n", *f_pos);
+
+    /* Check the count */
+    if(count == 0) {
+        return -EINVAL;
+    } else if ((count + *f_pos) > DEV_MEM_SIZE) {
+        return -ENOMEM;
+    }
+
+    /* Write on device buffer */
+    if(copy_from_user(&device_buffer[*f_pos],buff, count)) {
+        return -EFAULT;
+    }
+
+    /* Update file position */
+    *f_pos += count;
+
+    pr_info("Number of bytes successfully written %zu \n", count);
+    pr_info("Updated file position = %lld \n", *f_pos);
+
+    /* Return successfully written data */
+    return count;
 }
 
 /* file operations of the driver */

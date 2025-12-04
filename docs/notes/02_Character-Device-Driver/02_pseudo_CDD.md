@@ -162,8 +162,33 @@ ssize_t pcd_read(struct file *filp, char __user *buff, size_t count, loff_t *f_p
 ```
 1. user-space creates a buffer to receive the data to be read from the kernel
 2. kernel-space contains a buffer (peripheral-registers) that holds the value
-3. kenel uses ready-made function that verifies the user-space buffer location **copy_to_user(), copy_from_user()**
+3. kenel uses ready-made function that verifies the user-space buffer location **copy_to_user()**
 4. Check user requested 'count' value against DEV_MEM_SIZE of the device
 5. Maitain the value of f_pos (member attribute in the file struct with initial value zero) passed by the VFS.  
 5.1. f_pos shall be considered a buffer pointer to the next available register to be read / written  
 5.2 To maintain f_pos, use lseek() method.
+6. return count, errno or zero as nothing to read
+
+
+### 2. Write method
+1. user-space creates a buffer to hold the data to be written to the kernel's buffer
+2. kernel-space contains a buffer that shold be assigned with the incoming data
+3. kenel uses ready-made function that verifies the user-space buffer location **copy_from_user()**
+4. Check user requested 'count' value against DEV_MEM_SIZE of the device (count not zero - no write for zero bytes)
+5. Maitain the value of f_pos (member attribute in the file struct with initial value zero) passed by the VFS.  
+5.1. f_pos shall be considered a buffer pointer to the next available register to be read / written  
+5.2 To maintain f_pos, use lseek() method.
+6. return number of bytes successfully written or errno .. no zero!!!
+
+### 3. lseek method
+> It's used to change the value of file->f_pos
+```C
+
+if whence == SEEK_SET
+    filp->f_pos = off
+if whence == SEEK_CUR
+    filp->f_pos += off
+if whence == SEEK_END   // This case doesn't work in pcd driver
+    filp->f_pos = DEV_MEM_SIZE + off
+
+```
