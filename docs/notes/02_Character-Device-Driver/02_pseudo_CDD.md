@@ -150,9 +150,6 @@ loff_t pcd_lseek(sturct file *filp, loff_t off, int whence);
 ```
 ---
 ## File operation methods in detail
-### Error codes
-> it's a way of commnunication between kernel-space and user-space to allign wither the pecified request got handled properly or not.  
-![alt text](img/04_image.png)
 ### 1. Read method
 ```C
 ssize_t pcd_read(struct file *filp, char __user *buff, size_t count, loff_t *f_pos);
@@ -192,3 +189,16 @@ if whence == SEEK_END   // This case doesn't work in pcd driver
     filp->f_pos = DEV_MEM_SIZE + off
 
 ```
+---
+## Error Management
+### Error codes
+> it's a way of commnunication between kernel-space and user-space to allign wither the pecified request got handled properly or not.  
+![alt text](img/04_image.png)
+
+### Error handling tips
+1. Kernel org. recommends using **goto** keyword for error handling.  
+2. if a function returns a value less than 0, it would be an error code.
+3. else if a function returns a pointer, check if the ptr is an err ptr. as nullptr doesn't mean an err ptr.  
+3.1. To check if a ptr an err ptr use -> IS_ERR(ptr)  
+3.2. To conver ptr to err code -> PTR_ERR()  
+3.3. To convert error code to ptr -> ERR_PTR(errCode)  
