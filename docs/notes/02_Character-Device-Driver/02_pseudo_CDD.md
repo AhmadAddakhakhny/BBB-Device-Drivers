@@ -129,10 +129,6 @@ loff_t pcd_lseek(sturct file *filp, loff_t off, int whence);
 ---
 ### 6. Clean-up function implementation
 > you should un-register everything in backward chrono logic.  
-1. destroy device
-2. destroy class
-3. cdev delete
-4. unregister chrdev region
 ```C
     // 1. destory device
     // class: the class that has the device been registerd with
@@ -152,3 +148,22 @@ loff_t pcd_lseek(sturct file *filp, loff_t off, int whence);
     // count: number of device numbers to unregister
     void unregister_chrdev_region(dev_t from, unsigned count);
 ```
+---
+## File operation methods in detail
+### Error codes
+> it's a way of commnunication between kernel-space and user-space to allign wither the pecified request got handled properly or not.  
+![alt text](img/04_image.png)
+### 1. Read method
+```C
+ssize_t pcd_read(struct file *filp, char __user *buff, size_t count, loff_t *f_pos);
+    // adjust the count
+    // copy to user
+    // update f_pos
+```
+1. user-space creates a buffer to receive the data to be read from the kernel
+2. kernel-space contains a buffer (peripheral-registers) that holds the value
+3. kenel uses ready-made function that verifies the user-space buffer location **copy_to_user(), copy_from_user()**
+4. Check user requested 'count' value against DEV_MEM_SIZE of the device
+5. Maitain the value of f_pos (member attribute in the file struct with initial value zero) passed by the VFS.  
+5.1. f_pos shall be considered a buffer pointer to the next available register to be read / written  
+5.2 To maintain f_pos, use lseek() method.

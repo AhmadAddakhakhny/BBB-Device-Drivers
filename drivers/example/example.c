@@ -6,7 +6,7 @@
 
 #define DEV_MEM_SIZE    512
 
-/* Pseudo device's memory*/
+/* Pseudo device's memory */
 char device_buffer[DEV_MEM_SIZE];
 
 /* This holds the device number [major, minro] */
@@ -35,8 +35,28 @@ loff_t pcd_lseek (struct file *filp, loff_t off, int whence) {
 }
 
 ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos) {
-    pr_info("Read was successful!\n");
-    return 0;
+    pr_info("Read requested for %zu bytes \n", count);
+    pr_info("Current file position = %lld \n", *f_pos);
+
+    /* Check the count */
+    if ((count + *f_pos) > DEV_MEM_SIZE) {
+        /* update 'count' with current available buff-size to be read */
+        count = DEV_MEM_SIZE - *f_pos;
+    }
+
+    /* Copy to user */
+    if (copy_to_user(buff, device_buffer[*f_pos], count)) {
+        return -EFAULT;
+    }
+
+    /* Update f_pos */
+    *f_pos += count;
+
+    pr_info("Number of bytes successfully read %zu \n", count);
+    pr_info("Updated file position = %lld \n", *f_pos);
+
+    /* Return successfully read bytes */
+    return count;
 }
 
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos) {
@@ -55,20 +75,20 @@ struct file_operations pcd_fops = {
 };
 
 static int __init pcd_driver_init (void) {
-    // 1. Dynamically allocate a device number
+    /* 1. Dynamically allocate a device number */
     alloc_chrdev_region(&device_number, 0, 1, "pcd_devices");
 
-    // 2. initialize the cdev structure with fops
+    /* 2. initialize the cdev structure with fops */
     cdev_init(&pcd_cdev, &pcd_fops);
     pcd_cdev.owner = THIS_MODULE;
     
-    // 3. register a device (cdev struture) with VFS
+    /* 3. register a device (cdev struture) with VFS */
     cdev_add(&pcd_cdev, device_number, 1);
 
-    // 4.1 create device class under /sys/class/
+    /* 4.1 create device class under /sys/class/ */
     class_pcd = class_create("pcd_class");
 
-    // 4.2 populate device file info under /sys/class/
+    /* 4.2 populate device file info under /sys/class/ */
     pcd_device = device_create(class_pcd, NULL, device_number, NULL, "pcd");
 
     pr_info("Module init was successful!\n");
