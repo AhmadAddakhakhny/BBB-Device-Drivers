@@ -23,7 +23,8 @@ typedef enum {
 enum ePERMISSION {
     RDONLY = 0,
     WRONLY = 1,
-    RDWR = 2
+    RDWR = 2,
+    INVALID_PERM = -EPERM
 };
 
 /* Device private data */
@@ -84,16 +85,24 @@ struct pcdrv_private_data pcdrv_data = {
 };
 
 /* Function prototypes */
-int check_permission(void);
+int check_permission(enum ePERMISSION dev_perm, int access_mode);
 int pcd_open (struct inode *inode, struct file *filp);
 int pcd_release (struct inode *inode, struct file *filp);
 loff_t pcd_lseek (struct file *filp, loff_t off, int whence);
 ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos);
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos);
 
-int check_permission(void) {
-    pr_info("permission tbd \n");
-    return 0;
+int check_permission(enum ePERMISSION dev_perm, int access_mode) {
+    if(dev_perm == RDWR)
+        return 0;
+    
+    if((dev_perm == RDONLY) && ((access_mode & FMODE_READ) && !(access_mode & FMODE_WRITE)))
+        return 0;
+    
+    if((dev_perm == WRONLY) && ((access_mode & FMODE_WRITE) && !(access_mode & FMODE_READ)))
+        return 0;
+    
+    return INVALID_PERM;
 }
 
 int pcd_open (struct inode *inode, struct file *filp) {
@@ -111,7 +120,7 @@ int pcd_open (struct inode *inode, struct file *filp) {
     filp->private_data = pcdev_data;
 
     /* check permissions */
-    ret = check_permission();
+    ret = check_permission(pcdev_data->perm ,filp->f_mode);
     
     (!ret) ? pr_info("Open was successful!\n") : pr_info("Open was unsuccessful!\n");
     return ret;

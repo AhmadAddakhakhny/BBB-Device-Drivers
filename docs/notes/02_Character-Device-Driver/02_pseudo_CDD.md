@@ -250,3 +250,16 @@ pcdev_private_data *pcdev_data = container_of(inode->i_cdev,pcdev_private_data,c
 
 int pcd_open (struct inode *inode, struct file *filp);
 ```
+5. file permission
+5.1 the open method share info wheather this open request was attempted for the sake of read or write operation  
+5.2 you can deduce this attempt through **filp->f_mode**  
+```C
+if (filp->f_mode & FMODE_READ)
+    // file is opened for just read OR read-write
+
+if (filp->f_mode & FMODE_WRITE)
+    // file is opened for just write or read-write
+
+if ((filp->f_mode & FMODE_READ) && !(filp->f_mode & FMODE_WRITE)) 
+    // file is opened for just read only
+```
