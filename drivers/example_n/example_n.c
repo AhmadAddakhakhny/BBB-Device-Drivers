@@ -1,4 +1,5 @@
 #include<linux/module.h>
+#include<linux/kernel.h>
 #include<linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
@@ -85,16 +86,37 @@ struct pcdrv_private_data pcdrv_data = {
 
 
 /* Function prototypes */
+int check_permission(void);
 int pcd_open (struct inode *inode, struct file *filp);
 int pcd_release (struct inode *inode, struct file *filp);
 loff_t pcd_lseek (struct file *filp, loff_t off, int whence);
 ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos);
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos);
 
+int check_permission(void) {
+    pr_info("permission tbd \n");
+    return 0;
+}
 
 int pcd_open (struct inode *inode, struct file *filp) {
-    pr_info("Open was successful!\n");
-    return 0;
+    int ret;
+    struct pcdev_private_data *pcdev_data;
+
+    /* extract the minor number */
+    int minor_number = MINOR(inode->i_rdev);
+    pr_info("minor access = %d\n", minor_number);
+
+    /* extract the cdev and the  container of cdev */
+    pcdev_data = container_of(inode->i_cdev, struct pcdev_private_data, cdev);
+
+    /* store the private data to be used in other file ops*/
+    filp->private_data = pcdev_data;
+
+    /* check permissions */
+    ret = check_permission();
+    
+    (ret) ? pr_info("Open was successful!\n") : pr_info("Open was unsuccessful!\n");
+    return ret;
 }
 
 int pcd_release (struct inode *inode, struct file *filp) {
@@ -274,7 +296,7 @@ static void __exit pcd_driver_cleanup (void) {
         device_destroy(pcdrv_data.class_pcd, pcdrv_data.device_number+devNr);
         cdev_del(&pcdrv_data.pcdev_data[devNr].cdev);
     }
-    
+
     class_destroy(pcdrv_data.class_pcd);
     unregister_chrdev_region(pcdrv_data.device_number, NO_OF_DEVICES);
 }

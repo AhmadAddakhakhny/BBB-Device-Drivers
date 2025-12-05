@@ -232,3 +232,21 @@ struct pcdrv_private_data {
     struct pcdev_private_data pcdev_data[NO_OF_DEVICES]; // no. of instances of the devices
 }
 ```
+---
+## Adapt file operations to handle multiple devices
+### 1. Open method
+1. for each device file holds its own inode i.e. device number. to distiguish between file use minor number.
+2. inode can provide two main informations  
+2.1. the device number through **inode->i_rdev** (you can skip this)   
+2.2. the device structure **cdev** which it's supposed to be composed in intialization inside **struct pcdev_private_data** through **inode->i_cdev**  
+3. Deduce the address of the object that contains the **cdev** object through **container_of()** MACRO  
+4. Store the deduced address inside the **filp->private_data** to make it available for read() and write() methods.
+```C
+// ptr: pointer to the member
+// type of the container struct in which 'member' is embedded in
+// member: name of the member the 'ptr' refers to
+// # define container_of(ptr, type, member)
+pcdev_private_data *pcdev_data = container_of(inode->i_cdev,pcdev_private_data,cdev);
+
+int pcd_open (struct inode *inode, struct file *filp);
+```
