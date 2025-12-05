@@ -5,17 +5,31 @@
 
 /* MACROS */
 #define NO_OF_DEVICES        4
+#define BASE_MINOR_NUMBER    0
 #define DEV_BUFFER_PCDEV1    1024
-#define DEV_BUFFER_PCDEV1    512
-#define DEV_BUFFER_PCDEV1    1024
-#define DEV_BUFFER_PCDEV1    512
+#define DEV_BUFFER_PCDEV2    512
+#define DEV_BUFFER_PCDEV3    1024
+#define DEV_BUFFER_PCDEV4    512
+
+enum ePCDEV {
+    PCDEV_1 = 0,
+    PCDEV_2 = 1,
+    PCDEV_3 = 2,
+    PCDEV_4 = 3,
+};
+
+enum ePERMISSION {
+    RDONLY = 0,
+    WRONLY = 1,
+    RDWR = 2
+};
 
 /* Device private data */
 struct pcdev_private_data {
     char *buffer;
     unsigned sz;
     const char *serial_number;
-    int perm;
+    enum ePERMISSION perm;
     struct cdev cdev;
 };
 
@@ -28,22 +42,53 @@ struct pcdrv_private_data {
     struct pcdev_private_data pcdev_data[NO_OF_DEVICES];
 };
 
+/* Pseudo device's memory */
+char device_buffer_pcdev1[DEV_BUFFER_PCDEV1];
+char device_buffer_pcdev2[DEV_BUFFER_PCDEV2];
+char device_buffer_pcdev3[DEV_BUFFER_PCDEV3];
+char device_buffer_pcdev4[DEV_BUFFER_PCDEV4];
+
+struct pcdrv_private_data pcdrv_data = {
+    .total_devices = NO_OF_DEVICES,
+    .pcdev_data = {
+        [PCDEV_1] = {
+            .buffer = device_buffer_pcdev1,
+            .sz = DEV_BUFFER_PCDEV1,
+            .serial_number = "PCDEV1XXXABC123",
+            .perm = RDONLY
+        },
+
+        [PCDEV_2] = {
+            .buffer = device_buffer_pcdev2,
+            .sz = DEV_BUFFER_PCDEV2,
+            .serial_number = "PCDEV2XXXABC123",
+            .perm = WRONLY
+        },
+
+        [PCDEV_3] = {
+            .buffer = device_buffer_pcdev3,
+            .sz = DEV_BUFFER_PCDEV3,
+            .serial_number = "PCDEV3XXXABC123",
+            .perm = RDWR
+        },
+
+        [PCDEV_4] = {
+            .buffer = device_buffer_pcdev4,
+            .sz = DEV_BUFFER_PCDEV4,
+            .serial_number = "PCDEV4XXXABC123",
+            .perm = RDWR
+        }
+    }
+};
+
+
+
 /* Function prototypes */
 int pcd_open (struct inode *inode, struct file *filp);
 int pcd_release (struct inode *inode, struct file *filp);
 loff_t pcd_lseek (struct file *filp, loff_t off, int whence);
 ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos);
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos);
-
-/* Pseudo device's memory */
-char device_buffer_pcdev1[DEV_BUFFER_PCDEV1];
-char device_buffer_pcdev2[DEV_BUFFER_PCDEV1];
-char device_buffer_pcdev3[DEV_BUFFER_PCDEV1];
-char device_buffer_pcdev4[DEV_BUFFER_PCDEV1];
-
-/* This holds the device number [major, minro] */
-
-
 
 
 int pcd_open (struct inode *inode, struct file *filp) {
