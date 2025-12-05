@@ -5,18 +5,19 @@
 
 /* MACROS */
 #define NO_OF_DEVICES        4
-#define BASE_MINOR_NUMBER    0
 #define DEV_BUFFER_PCDEV1    1024
 #define DEV_BUFFER_PCDEV2    512
 #define DEV_BUFFER_PCDEV3    1024
 #define DEV_BUFFER_PCDEV4    512
+#define PCDEV_MINOR_BASE_NUMBER    0
 
-enum ePCDEV {
+typedef enum {
     PCDEV_1 = 0,
     PCDEV_2 = 1,
     PCDEV_3 = 2,
     PCDEV_4 = 3,
-};
+    PCDEV_INVALID = 4
+} ePCDEV;
 
 enum ePERMISSION {
     RDONLY = 0,
@@ -208,67 +209,74 @@ struct file_operations pcd_fops = {
 };
 
 static int __init pcd_driver_init (void) {
-#if 0
+
     int errCode = 0;
+    ePCDEV devNr = PCDEV_1;
     /* 1. Dynamically allocate a device number */
-    errCode = alloc_chrdev_region(&device_number, 0, 1, "pcd_devices");
+    errCode = alloc_chrdev_region(&pcdrv_data.device_number, PCDEV_MINOR_BASE_NUMBER, NO_OF_DEVICES, "pcd_devices");
     if (errCode < 0) {
         pr_err("Device dynamic allocation failed!\n");
         goto out;
     }
 
-    /* 2. initialize the cdev structure with fops */
-    cdev_init(&pcd_cdev, &pcd_fops);
-    pcd_cdev.owner = THIS_MODULE;
-    
-    /* 3. register a device (cdev struture) with VFS */
-    errCode = cdev_add(&pcd_cdev, device_number, 1);
-    if (errCode < 0) {
-        pr_err("Device registeration to VFS failed!\n");
+    /* 2 create device class under /sys/class/ */
+    pcdrv_data.class_pcd = class_create("pcd_class");
+    if(IS_ERR(pcdrv_data.class_pcd)) {
+        pr_err("Class creation failed!\n");
+        errCode = PTR_ERR(pcdrv_data.class_pcd);
         goto unreg_chrdev;
     }
 
-    /* 4.1 create device class under /sys/class/ */
-    class_pcd = class_create("pcd_class");
-    if(IS_ERR(class_pcd)) {
-        pr_err("Class creation failed!\n");
-        errCode = PTR_ERR(class_pcd);
-        goto cdev_del;
+    for(devNr = PCDEV_1; devNr < PCDEV_INVALID; devNr++) {
+        /* 3. initialize the cdev structure with fops */
+        cdev_init(&pcdrv_data.pcdev_data[devNr].cdev, &pcd_fops);
+        pcdrv_data.pcdev_data[devNr].cdev.owner = THIS_MODULE;
+        
+        /* 4. register a device (cdev struture) with VFS */
+        errCode = cdev_add(&pcdrv_data.pcdev_data[devNr].cdev, pcdrv_data.device_number+devNr, 1);
+        if (errCode < 0) {
+            pr_err("Device registeration to VFS failed!\n");
+            goto cdev_del;
+        }
+    
+        /* 5. populate device file info under /sys/class/ */
+        pcdrv_data.pcd_device = device_create(pcdrv_data.class_pcd, NULL, pcdrv_data.device_number+devNr, NULL, "pcdev-%d", devNr+1);
+        if(IS_ERR(pcdrv_data.pcd_device)) {
+            pr_err("Device file creation failed!\n");
+            errCode = PTR_ERR(pcdrv_data.pcd_device);
+            goto class_del;
+        }
+
+        pr_err("Device creation pcdev-%d was successful!\n", devNr+1);
+        return 0;
     }
 
-    /* 4.2 populate device file info under /sys/class/ */
-    pcd_device = device_create(class_pcd, NULL, device_number, NULL, "pcd");
-    if(IS_ERR(pcd_device)) {
+    class_del:
+    cdev_del:
+        for (; devNr >= PCDEV_1; devNr--) {
+            device_destroy(pcdrv_data.class_pcd, pcdrv_data.device_number+devNr);
+            cdev_del(&pcdrv_data.pcdev_data[devNr].cdev);
+        }
+
+        class_destroy(pcdrv_data.class_pcd);
+
+    unreg_chrdev:
+        unregister_chrdev_region(pcdrv_data.device_number, NO_OF_DEVICES);
+    out:
         pr_err("Device file creation failed!\n");
-        errCode = PTR_ERR(pcd_device);
-        goto class_del;
-    }
-
-    pr_info("Device loading failed!\n");
-    return 0;
-
-class_del:
-    device_destroy(class_pcd, device_number);
-cdev_del:
-    cdev_del(&pcd_cdev);
-unreg_chrdev:
-    unregister_chrdev_region(device_number, 1);
-out:
-    pr_err("Device file creation failed!\n");
+        
     return errCode;
-#endif
-    return 0;
 }
 
 static void __exit pcd_driver_cleanup (void) {
-#if 0
-    device_destroy(class_pcd, device_number);
-    class_destroy(class_pcd);
-    cdev_del(&pcd_cdev);
-    unregister_chrdev_region(device_number, 1);
 
-    pr_info ("pcd cleanup was successful!\n");
-#endif
+    for (ePCDEV devNr = PCDEV_1; devNr < PCDEV_INVALID; devNr++) {
+        device_destroy(pcdrv_data.class_pcd, pcdrv_data.device_number+devNr);
+        cdev_del(&pcdrv_data.pcdev_data[devNr].cdev);
+    }
+    
+    class_destroy(pcdrv_data.class_pcd);
+    unregister_chrdev_region(pcdrv_data.device_number, NO_OF_DEVICES);
 }
 
 module_init(pcd_driver_init);
