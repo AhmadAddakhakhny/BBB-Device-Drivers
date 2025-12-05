@@ -83,8 +83,6 @@ struct pcdrv_private_data pcdrv_data = {
     }
 };
 
-
-
 /* Function prototypes */
 int check_permission(void);
 int pcd_open (struct inode *inode, struct file *filp);
@@ -115,7 +113,7 @@ int pcd_open (struct inode *inode, struct file *filp) {
     /* check permissions */
     ret = check_permission();
     
-    (ret) ? pr_info("Open was successful!\n") : pr_info("Open was unsuccessful!\n");
+    (!ret) ? pr_info("Open was successful!\n") : pr_info("Open was unsuccessful!\n");
     return ret;
 }
 
@@ -127,11 +125,12 @@ int pcd_release (struct inode *inode, struct file *filp) {
 loff_t pcd_lseek (struct file *filp, loff_t offset, int whence) {
     pr_info("lseek requested!\n");
     pr_info("Current file position = %lld \n", filp->f_pos);
-#if 0
+    struct pcdev_private_data *pcdev_data = (struct pcdev_private_data*)filp->private_data;
     loff_t sz_total = 0;
+
     switch (whence) {
         case SEEK_SET:
-            if (offset > DEV_MEM_SIZE || offset < 0) 
+            if (offset > pcdev_data->sz || offset < 0) 
                 return -EINVAL;
             
             filp->f_pos = offset;
@@ -139,15 +138,15 @@ loff_t pcd_lseek (struct file *filp, loff_t offset, int whence) {
 
         case SEEK_CUR:
             sz_total = filp->f_pos + offset;
-            if (sz_total > DEV_MEM_SIZE || offset < 0)
+            if (sz_total > pcdev_data->sz || offset < 0)
                 return -EINVAL;
 
             filp->f_pos = sz_total;
             break;
 
         case SEEK_END:
-            sz_total = DEV_MEM_SIZE + offset;
-            if (sz_total > DEV_MEM_SIZE || offset < 0)
+            sz_total = pcdev_data->sz + offset;
+            if (sz_total > pcdev_data->sz || offset < 0)
                 return -EINVAL;
 
             filp->f_pos = sz_total;
@@ -160,22 +159,21 @@ loff_t pcd_lseek (struct file *filp, loff_t offset, int whence) {
     pr_info("Updated file position = %lld \n", filp->f_pos);
 
     return filp->f_pos;
-#endif
-    return -EINVAL;
 }
 
 ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos) {
     pr_info("Read requested for %zu bytes \n", count);
     pr_info("Current file position = %lld \n", *f_pos);
-#if 0
+    struct pcdev_private_data *pcdev_data = (struct pcdev_private_data*)filp->private_data;
+
     /* Check the count */
-    if ((count + *f_pos) > DEV_MEM_SIZE) {
+    if ((count + *f_pos) > pcdev_data->sz) {
         /* update 'count' with current available buff-size to be read */
-        count = DEV_MEM_SIZE - *f_pos;
+        count = pcdev_data->sz - *f_pos;
     }
 
     /* Copy to user */
-    if (copy_to_user(buff, &device_buffer[*f_pos], count)) {
+    if (copy_to_user(buff, pcdev_data->buffer+(*f_pos), count)) {
         return -EFAULT;
     }
 
@@ -187,24 +185,25 @@ ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_
 
     /* Return successfully read bytes */
     return count;
-#endif
-    return 0;
 }
 
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos) {
-#if 0
     pr_info("Write requested for %zu bytes \n", count);
     pr_info("Current file position = %lld \n", *f_pos);
+
+    struct pcdev_private_data *pcdev_data = (struct pcdev_private_data*)filp->private_data;
 
     /* Check the count */
     if(count == 0) {
         return -EINVAL;
-    } else if ((count + *f_pos) > DEV_MEM_SIZE) {
-        return -ENOMEM;
+    }
+    
+    if ((count + *f_pos) > pcdev_data->sz) {
+        count = pcdev_data->sz - *f_pos;
     }
 
     /* Write on device buffer */
-    if(copy_from_user(&device_buffer[*f_pos],buff, count)) {
+    if(copy_from_user(pcdev_data->buffer+(*f_pos),buff, count)) {
         return -EFAULT;
     }
 
@@ -216,8 +215,6 @@ ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, lof
 
     /* Return successfully written data */
     return count;
-#endif
-    return 0;
 }
 
 /* file operations of the driver */
