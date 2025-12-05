@@ -3,7 +3,7 @@
 #----------------------------------------
 
 SRC_DIR := $(CURDIR)
-DD := example
+DD := example_n
 
 # Default architecture
 ARCH ?= arm

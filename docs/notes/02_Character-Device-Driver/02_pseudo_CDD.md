@@ -202,3 +202,33 @@ if whence == SEEK_END   // This case doesn't work in pcd driver
 3.1. To check if a ptr an err ptr use -> IS_ERR(ptr)  
 3.2. To conver ptr to err code -> PTR_ERR()  
 3.3. To convert error code to ptr -> ERR_PTR(errCode)  
+
+---
+# pcd with multiple devices
+1. It's used to expose different device files to the user-space of the same driver
+2. the challenges are:  
+2.1. how to distiniguish from what device file the incoming request is.  
+2.2. how to adapt the methods of file operations.  
+```
+Let's adapt the device driver to be able to populate 4 different device files, where each device file is controlling a buffer (memory area).
+pcdev-1 [RDONLY] , pcdev-2 [RDONLY] , pcdev-3 [RDWR] , pcdev-4 [RDWR]
+```
+### Design the driver data structures
+1. Structure which holds driver's private data
+2. Structure which holds device's private data
+
+```C
+// Device's private data
+struct pcdev_private_data {
+    char *buffer; // start address of the buffer (memory area)
+    unsigned size; // buffer size
+    const char *serial_number; // buffer serial number
+    int perm; // device file permission [RDONLY, RDONLY, RDWR]
+    struct cdev cdev; // cdev instance
+}
+
+struct pcdrv_private_data {
+    int total_devices;  // Total no. of devices that should this driver hold.
+    struct pcdev_private_data pcdev_data[NO_OF_DEVICES]; // no. of instances of the devices
+}
+```
