@@ -274,11 +274,11 @@ static int __init pcd_driver_init (void) {
             errCode = PTR_ERR(pcdrv_data.pcd_device);
             goto class_del;
         }
-
-        pr_err("Device creation pcdev-%d was successful!\n", devNr+1);
-        return 0;
     }
-
+    
+    pr_info("Device creation pcd was successful!\n");
+    return 0;
+    
     class_del:
     cdev_del:
         for (; devNr >= PCDEV_1; devNr--) {
