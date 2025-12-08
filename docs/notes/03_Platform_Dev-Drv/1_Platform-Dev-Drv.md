@@ -130,3 +130,16 @@ void pcdev_release(struct device *dev) {
     // free dynamic memory allocation
 }
 ```
+
+### Create platform driver
+1. Create instace of struct platform_driver
+1.1 Initialize this instance with the callbacks of probe() and release() methods
+1.2 Initialize this instance with a matching name
+2. Implement the __init and __exit methods
+2.1 to register the driver to the platform bus core  
+2.2 to unregister the driver from the platform bus  
+3. implement the probe() method
+3.1.
+4. Implement the release method
+5. Implemet file operations
+> Remark: the probe and release methods runs before the methods of the device __init, __exit, release()

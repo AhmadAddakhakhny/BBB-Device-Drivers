@@ -6,7 +6,7 @@
 void pcdev_release (struct device *dev);
 
 /* 1. Create 2 platform private data */
-struct pcdev_platform_data pcdev_pdata[PLATFORM_DEVICES] = {
+struct pcdev_platform_data pcdev_pdata[NO_OF_DEVICES] = {
     [PCDEV_1] = {
         .size = DEV_BUFFER_PCDEV1,
         .serial_number = "PCDEV1XXXABC123",
