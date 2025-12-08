@@ -20,7 +20,8 @@
 4. PIN config ... etc.
 
 ### 5. How to add platform device info to the kernel?
-> During kernel boot: using device tree blob
+1. During kernel boot: using device tree blob (recommended method)  
+2. Hard conding the board information (obsolete methodo)
 
 ### 6. What is Device tree?
 1. DT was created by **Open Firmware** then concept was adopted by linux org.
@@ -42,3 +43,90 @@
 | LCD controller                  | drivers/gpu/drm/tilcdc/tilcdc_drv.c                      | LCDC DRM driver, based on da8xx-fb                    |
 | Touch screen controller         | drivers/input/touchscreen/ti_am335x_tsc.c                | TI Touch Screen driver                                |
 
+---
+
+# Registering platform device and driver (Hard coded methodology - Obsolete)
+
+### 1. Registeration
+> To register a platform driver  
+1. Create a object of the platform driver, which would compose important call back functions (probe)
+2. Register this object to the linux platform core
+3. Create an object of the platform device, which would compose device description attriputes (deprecated)
+4. Register this object to the linux pltaform core (deprecated)
+> Remark: use this header for using the needed Kernel APIs **/linux/platform_device.h8**
+```C
+    #include <include/linux/platform_device.h>
+    // 1. Create instance of platform driver for your driver
+    struct platform_driver drv = {
+        .probe = pcd_probe,
+        .remove = pcd_remove,
+        .id_table = pcd_id_table
+    };
+
+    // 2. Register the platform driver using the following MACRO
+    platform_driver_register(&drv);
+
+    // 3. Create instance of platform device for your device
+    struct platform_device dev = {
+        .name = "pcd_dev_1",
+    };
+
+    // 4. Register the platform device using the following function
+    platform_device_register(&dev);
+```
+### 2. Matching mechanism
+1. The linux platform core implementaion maintains platform device and driver lists. whenever you add a new platform device or driver, this list gets updated and matching mechanism triggers.
+2. Then The platform bus core looks for the needed platform drivers for each platform device, that is known by 'matching' mechanism.
+3. Once match detected either match by name, id or device tree node, the probe function of the driver gets called with the "device" as an argument.
+
+### What shall probe function  of the platform driver do?
+> It runs whenever a match took place.
+1. Device detection - Verify that the specified device HW actually exists
+2. Device initialization
+3. Memory allocation for various data structures
+4. Memory mapping i/o
+5. Register interrupt handlers
+6. Registering device to kernel framework
+> returns 0 at success, otherwise an error code.
+
+### What shall remove function  of the platform driver do?
+> It runs once a device get removed
+1. Unregister the device from the kernel
+2. Free allocated memory
+3. Shutdown/De-initialize the device
+---
+
+## Excerice Description
+1. Adapt the multiple device driver example to handle probe() and remove()
+2. Create another kernel module to act as a platform device
+2.1. Create 2 platform devices and initialize them with required information (name, platform data, id of the device, release function for the device)
+3. Register platform devices with the linux kernel
+
+### Create platform devices
+1. create your user-define structure that holds your device private data
+2. create instanse of platform_device
+3. initialize the platform_device instance with (name, id, dev_private_date, dev_release)
+4. register to the platform bus core
+5. Result: after module registeration, check the /sys/devices/platform/pseudo-char-device .. as they would be exposed over there.
+
+```C
+struct pcdev_platform_data pcdev_private_pdata = {
+    .size = DEV_BUFFER_PCDEV1,
+    .serial_number = "PCDEV1XXXABC123",
+    .perm = RDWR
+};
+
+struct platform_device platform_pcdev = {
+    .name = "pseudo-char-device",
+    .id = 1,
+    .dev = {
+        .platform_data = &pcdev_private_pdata,
+        .release = pcdev_release
+    }
+};
+
+void pcdev_release(struct device *dev) {
+    // do relase 
+    // free dynamic memory allocation
+}
+```
