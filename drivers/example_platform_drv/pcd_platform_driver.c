@@ -229,7 +229,7 @@ int pcd_platform_driver_probe (struct platform_device* pdev) {
 
     // platform device data structure (substituteed by DT - next sessions)
     struct pcdev_platform_data *pdata;
-
+    
     /* 1. Get the platform data*/
     // if platform data isn't found, dont procedd! this is developer POV.
     // pdata = (struct pcdev_platform_data*)pdev->dev.platform_data;
@@ -283,11 +283,14 @@ int pcd_platform_driver_probe (struct platform_device* pdev) {
         ret = PTR_ERR(pcdrv_data.pcd_device);
         goto cdev_del;
     }
-
+    // 7. Expose the device data to the remove method in order to de-allocate heap memory
+    // pdev->dev.driver_data = dev_data;
+    pcdrv_data.total_devices++;
+    dev_set_drvdata(&pdev->dev, dev_data);
     pr_info("Device is detected\n");
     return 0;
     
-    /* 7. Error handling */
+    /* 8. Error handling */
 cdev_del:
     cdev_del(&dev_data->cdev);
 buffer_free:
@@ -299,8 +302,18 @@ out:
     return ret;
 }
 
-void pcd_platform_driver_remove(struct platform_device* dev) {
+void pcd_platform_driver_remove(struct platform_device* pdev) {
     pr_info("release executed\n");
+    struct pcdev_private_data *dev_data = dev_get_drvdata(&pdev->dev);
+    /* 1. Remove a device that was created with device_create() */
+    device_destroy(pcdrv_data.class_pcd, dev_data->device_num);
+    /* 2. Remove a cdev entry from the system */
+    cdev_del(&dev_data->cdev);
+    /* 3. Free the memory held by the device */
+    kfree(dev_data->buffer);
+    kfree(dev_data);
+
+    pcdrv_data.total_devices--;
 }
 
 struct platform_driver pcd_platform_driver = {
