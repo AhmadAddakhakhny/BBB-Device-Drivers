@@ -135,11 +135,45 @@ void pcdev_release(struct device *dev) {
 1. Create instace of struct platform_driver
 1.1 Initialize this instance with the callbacks of probe() and release() methods
 1.2 Initialize this instance with a matching name
-2. Implement the __init and __exit methods
-2.1 to register the driver to the platform bus core  
-2.2 to unregister the driver from the platform bus  
-3. implement the probe() method
-3.1.
-4. Implement the release method
+2. Implement the __init and __exit methods  
+2.1 to register the driver to the platform bus core    
+2.2 to unregister the driver from the platform bus   
+3. implement the probe() method   
+3.1. Allocate dynamicall memory for detected devices
+```C
+kmalloc()
+kfree()
+
+```
+4. Implement the release method  
 5. Implemet file operations
 > Remark: the probe and release methods runs before the methods of the device __init, __exit, release()
+---
+### Explain dynamic memory allocation in kernel spacce?
+```C
+#include include/linux/slab.h
+// MAX allocated size is limited, based on target, good practice, use it with objects less than page size, ARM 4Kib (4 * 1024 Bytes)
+// flags: changes the behavious of the underlying memory allocator
+//  there are many flags, but mainly the flag decides if the service would go to sleep or not, in case of no space left in RAM
+// 1. GFP_KERNEL: Allocate mormal kernel ram. May sleep.
+// 2. GFP_ATOMIC: Allocation will nt sleep. May use emergency pools (use it inside ISR)
+void* kmalloc(size_t size, gfp_t flags);
+void* kzalloc(size_t size, gfp_t flags); // preferablly to be used, as initialize allocated memory with 0, to avoid wild pointer behaviours
+
+
+// Usage
+struct bar *k;
+k = kmalloc(sizeof(*k), GFP_KERNEL);
+if(!k)
+    return -ENOMEM;
+
+//--
+// don't free a non-allocated memory bykmalloc(), otherwise will run into trouble
+void kfree(const void *objp);
+kfree(k);
+
+//--
+// other functions.
+kzfree(); // same as kfree()
+krealloc(); // resize heap by allocating another place with a new size
+```

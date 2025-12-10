@@ -221,9 +221,82 @@ struct file_operations pcd_fops = {
     .owner = THIS_MODULE
 };
 
-int pcd_platform_driver_probe (struct platform_device* dev) {
+int pcd_platform_driver_probe (struct platform_device* pdev) {
     pr_info("probe executed\n");
+    int ret;
+    // driver private data structure pointer
+    struct pcdev_private_data *dev_data;
+
+    // platform device data structure (substituteed by DT - next sessions)
+    struct pcdev_platform_data *pdata;
+
+    /* 1. Get the platform data*/
+    // if platform data isn't found, dont procedd! this is developer POV.
+    // pdata = (struct pcdev_platform_data*)pdev->dev.platform_data;
+    pdata = (struct pcdev_platform_data*)dev_get_platdata(&pdev->dev);
+    if(!pdata) {
+        pr_info("No platform data available\n");
+        ret = -EINVAL;
+        goto out;
+    }
+
+    /* 2. Dynamically allocate memory for the device private data */
+    dev_data = kzalloc(sizeof(*dev_data), GFP_KERNEL);
+    if(!dev_data) {
+        pr_info("Can't allocate memory\n");
+        ret = -EINVAL;
+        goto out;
+    }
+    dev_data->pdata.size = pdata->size;
+    dev_data->pdata.perm = pdata->perm;
+    dev_data->pdata.serial_number = pdata->serial_number;
+    pr_info("Device serial number = %s\n", dev_data->pdata.serial_number);
+    pr_info("Device size = %d\n", dev_data->pdata.size);
+    pr_info("Device permission = %d\n", dev_data->pdata.perm);
+
+    /* 3. Dynamically allocate memory for the device buffer using size info from the platform data*/
+    dev_data->buffer = kzalloc(dev_data->pdata.size, GFP_KERNEL);
+    if(!dev_data->buffer) {
+        pr_info("Can't allocate memory\n");
+        ret = -EINVAL;
+        goto dev_data_free;
+    }
+
+    /* 4. Get device number */
+    dev_data->device_num = pcdrv_data.device_num_base + pdev->id;
+
+    /* 5. Do cdev init and cdev add */
+    cdev_init(&dev_data->cdev, &pcd_fops);
+    dev_data->cdev.owner = THIS_MODULE;
+    
+    /* 4. register a device (cdev struture) with VFS */
+    ret = cdev_add(&dev_data->cdev, dev_data->device_num, 1);
+    if (ret < 0) {
+        pr_err("Device registeration to VFS failed!\n");
+        goto buffer_free;
+    }
+
+    /* 6. Create device file for the detected platform device */
+    pcdrv_data.pcd_device = device_create(pcdrv_data.class_pcd, NULL, dev_data->device_num , NULL, "pcdev-%d", pdev->id +1);
+    if(IS_ERR(pcdrv_data.pcd_device)) {
+        pr_err("Device file creation failed!\n");
+        ret = PTR_ERR(pcdrv_data.pcd_device);
+        goto cdev_del;
+    }
+
+    pr_info("Device is detected\n");
     return 0;
+    
+    /* 7. Error handling */
+cdev_del:
+    cdev_del(&dev_data->cdev);
+buffer_free:
+    kfree(dev_data->buffer);
+dev_data_free:
+    kfree(dev_data);
+out:
+    pr_info("Device probe failed\n");
+    return ret;
 }
 
 void pcd_platform_driver_remove(struct platform_device* dev) {
