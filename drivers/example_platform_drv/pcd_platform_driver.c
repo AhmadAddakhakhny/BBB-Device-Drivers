@@ -76,99 +76,96 @@ int pcd_release (struct inode *inode, struct file *filp) {
 loff_t pcd_lseek (struct file *filp, loff_t offset, int whence) {
     pr_info("lseek requested!\n");
     pr_info("Current file position = %lld \n", filp->f_pos);
-    // struct pcdev_private_data *pcdev_data = (struct pcdev_private_data*)filp->private_data;
-    // loff_t sz_total = 0;
+    struct pcdev_private_data *pcdev_data = (struct pcdev_private_data*)filp->private_data;
+    loff_t sz_total = 0;
 
-    // switch (whence) {
-    //     case SEEK_SET:
-    //         if (offset > pcdev_data->sz || offset < 0) 
-    //             return -EINVAL;
+    switch (whence) {
+        case SEEK_SET:
+            if (offset > pcdev_data->pdata.size || offset < 0) 
+                return -EINVAL;
             
-    //         filp->f_pos = offset;
-    //         break;
+            filp->f_pos = offset;
+            break;
 
-    //     case SEEK_CUR:
-    //         sz_total = filp->f_pos + offset;
-    //         if (sz_total > pcdev_data->sz || offset < 0)
-    //             return -EINVAL;
+        case SEEK_CUR:
+            sz_total = filp->f_pos + offset;
+            if (sz_total > pcdev_data->pdata.size || offset < 0)
+                return -EINVAL;
 
-    //         filp->f_pos = sz_total;
-    //         break;
+            filp->f_pos = sz_total;
+            break;
 
-    //     case SEEK_END:
-    //         sz_total = pcdev_data->sz + offset;
-    //         if (sz_total > pcdev_data->sz || offset < 0)
-    //             return -EINVAL;
+        case SEEK_END:
+            sz_total = pcdev_data->pdata.size + offset;
+            if (sz_total > pcdev_data->pdata.size || offset < 0)
+                return -EINVAL;
 
-    //         filp->f_pos = sz_total;
-    //         break;
+            filp->f_pos = sz_total;
+            break;
 
-    //     default:
-    //         return -EINVAL; /* invalid whence value */
-    // }
+        default:
+            return -EINVAL; /* invalid whence value */
+    }
 
-    // pr_info("Updated file position = %lld \n", filp->f_pos);
+    pr_info("Updated file position = %lld \n", filp->f_pos);
 
-    // return filp->f_pos;
-    return 0;
+    return filp->f_pos;
 }
 
 ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_pos) {
     pr_info("Read requested for %zu bytes \n", count);
     pr_info("Current file position = %lld \n", *f_pos);
-    // struct pcdev_private_data *pcdev_data = (struct pcdev_private_data*)filp->private_data;
+    struct pcdev_private_data *pcdev_data = (struct pcdev_private_data*)filp->private_data;
 
-    // /* Check the count */
-    // if ((count + *f_pos) > pcdev_data->sz) {
-    //     /* update 'count' with current available buff-size to be read */
-    //     count = pcdev_data->sz - *f_pos;
-    // }
+    /* Check the count */
+    if ((count + *f_pos) > pcdev_data->pdata.size) {
+        /* update 'count' with current available buff-size to be read */
+        count = pcdev_data->pdata.size - *f_pos;
+    }
 
-    // /* Copy to user */
-    // if (copy_to_user(buff, pcdev_data->buffer+(*f_pos), count)) {
-    //     return -EFAULT;
-    // }
+    /* Copy to user */
+    if (copy_to_user(buff, pcdev_data->buffer+(*f_pos), count)) {
+        return -EFAULT;
+    }
 
-    // /* Update f_pos */
-    // *f_pos += count;
+    /* Update f_pos */
+    *f_pos += count;
 
-    // pr_info("Number of bytes successfully read %zu \n", count);
-    // pr_info("Updated file position = %lld \n", *f_pos);
+    pr_info("Number of bytes successfully read %zu \n", count);
+    pr_info("Updated file position = %lld \n", *f_pos);
 
-    // /* Return successfully read bytes */
-    // return count;
-    return 0;
+    /* Return successfully read bytes */
+    return count;
 }
 
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos) {
     pr_info("Write requested for %zu bytes \n", count);
     pr_info("Current file position = %lld \n", *f_pos);
 
-    // struct pcdev_private_data *pcdev_data = (struct pcdev_private_data*)filp->private_data;
+    struct pcdev_private_data *pcdev_data = (struct pcdev_private_data*)filp->private_data;
 
-    // /* Check the count */
-    // if(count == 0) {
-    //     return -EINVAL;
-    // }
+    /* Check the count */
+    if(count == 0) {
+        return -EINVAL;
+    }
     
-    // if ((count + *f_pos) > pcdev_data->sz) {
-    //     count = pcdev_data->sz - *f_pos;
-    // }
+    if ((count + *f_pos) > pcdev_data->pdata.size) {
+        count = pcdev_data->pdata.size - *f_pos;
+    }
 
-    // /* Write on device buffer */
-    // if(copy_from_user(pcdev_data->buffer+(*f_pos),buff, count)) {
-    //     return -EFAULT;
-    // }
+    /* Write on device buffer */
+    if(copy_from_user(pcdev_data->buffer+(*f_pos),buff, count)) {
+        return -EFAULT;
+    }
 
-    // /* Update file position */
-    // *f_pos += count;
+    /* Update file position */
+    *f_pos += count;
 
-    // pr_info("Number of bytes successfully written %zu \n", count);
-    // pr_info("Updated file position = %lld \n", *f_pos);
+    pr_info("Number of bytes successfully written %zu \n", count);
+    pr_info("Updated file position = %lld \n", *f_pos);
 
-    // /* Return successfully written data */
-    // return count;
-    return 0;
+    /* Return successfully written data */
+    return count;
 }
 
 /* file operations of the driver */
