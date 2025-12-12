@@ -21,48 +21,8 @@ struct pcdrv_private_data {
     dev_t device_num_base;
     struct class* class_pcd;
     struct device* pcd_device;
-    // struct pcdev_private_data pcdev_data[NO_OF_DEVICES];
 };
 struct pcdrv_private_data pcdrv_data;
-
-/* Pseudo device's memory */
-// char device_buffer_pcdev1[DEV_BUFFER_PCDEV1];
-// char device_buffer_pcdev2[DEV_BUFFER_PCDEV2];
-// char device_buffer_pcdev3[DEV_BUFFER_PCDEV3];
-// char device_buffer_pcdev4[DEV_BUFFER_PCDEV4];
-
-// struct pcdrv_private_data pcdrv_data = {
-//     .total_devices = NO_OF_DEVICES,
-//     .pcdev_data = {
-//         [PCDEV_1] = {
-//             .buffer = device_buffer_pcdev1,
-//             .sz = DEV_BUFFER_PCDEV1,
-//             .serial_number = "PCDEV1XXXABC123",
-//             .perm = RDONLY
-//         },
-
-//         [PCDEV_2] = {
-//             .buffer = device_buffer_pcdev2,
-//             .sz = DEV_BUFFER_PCDEV2,
-//             .serial_number = "PCDEV2XXXABC123",
-//             .perm = WRONLY
-//         },
-
-//         [PCDEV_3] = {
-//             .buffer = device_buffer_pcdev3,
-//             .sz = DEV_BUFFER_PCDEV3,
-//             .serial_number = "PCDEV3XXXABC123",
-//             .perm = RDWR
-//         },
-
-//         [PCDEV_4] = {
-//             .buffer = device_buffer_pcdev4,
-//             .sz = DEV_BUFFER_PCDEV4,
-//             .serial_number = "PCDEV4XXXABC123",
-//             .perm = RDWR
-//         }
-//     }
-// };
 
 /* Function prototypes */
 int pcd_platform_driver_probe (struct platform_device* dev);
