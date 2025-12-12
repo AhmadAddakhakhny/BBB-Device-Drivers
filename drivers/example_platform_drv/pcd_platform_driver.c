@@ -66,7 +66,7 @@ struct pcdrv_private_data pcdrv_data;
 
 /* Function prototypes */
 int pcd_platform_driver_probe (struct platform_device* dev);
-void pcd_platform_driver_remove(struct platform_device* dev);
+int pcd_platform_driver_remove(struct platform_device* dev);
 int check_permission(enum ePERMISSION dev_perm, int access_mode);
 int pcd_open (struct inode *inode, struct file *filp);
 int pcd_release (struct inode *inode, struct file *filp);
@@ -302,7 +302,7 @@ out:
     return ret;
 }
 
-void pcd_platform_driver_remove(struct platform_device* pdev) {
+int pcd_platform_driver_remove(struct platform_device* pdev) {
     pr_info("release executed\n");
     struct pcdev_private_data *dev_data = dev_get_drvdata(&pdev->dev);
     /* 1. Remove a device that was created with device_create() */
@@ -314,6 +314,8 @@ void pcd_platform_driver_remove(struct platform_device* pdev) {
     kfree(dev_data);
 
     pcdrv_data.total_devices--;
+
+    return 0;
 }
 
 struct platform_driver pcd_platform_driver = {
