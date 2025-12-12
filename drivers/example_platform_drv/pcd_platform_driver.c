@@ -75,36 +75,36 @@ ssize_t pcd_read (struct file *filp, char __user *buff, size_t count, loff_t *f_
 ssize_t pcd_write (struct file *filp, const char __user *buff, size_t count, loff_t *f_pos);
 
 int check_permission(enum ePERMISSION dev_perm, int access_mode) {
-    // if(dev_perm == RDWR)
-    //     return 0;
+    if(dev_perm == RDWR)
+        return 0;
     
-    // if((dev_perm == RDONLY) && ((access_mode & FMODE_READ) && !(access_mode & FMODE_WRITE)))
-    //     return 0;
+    if((dev_perm == RDONLY) && ((access_mode & FMODE_READ) && !(access_mode & FMODE_WRITE)))
+        return 0;
     
-    // if((dev_perm == WRONLY) && ((access_mode & FMODE_WRITE) && !(access_mode & FMODE_READ)))
-    //     return 0;
+    if((dev_perm == WRONLY) && ((access_mode & FMODE_WRITE) && !(access_mode & FMODE_READ)))
+        return 0;
     
     return INVALID_PERM;
 }
 
 int pcd_open (struct inode *inode, struct file *filp) {
-    // int ret;
-    // struct pcdev_private_data *pcdev_data;
+    int ret;
+    struct pcdev_private_data *pcdev_data;
 
-    // /* extract the minor number */
-    // int minor_number = MINOR(inode->i_rdev);
-    // pr_info("minor access = %d\n", minor_number);
+    /* extract the minor number */
+    int minor_number = MINOR(inode->i_rdev);
+    pr_info("minor access = %d\n", minor_number);
 
-    // /* extract the cdev and the  container of cdev */
-    // pcdev_data = container_of(inode->i_cdev, struct pcdev_private_data, cdev);
+    /* extract the cdev and the  container of cdev */
+    pcdev_data = container_of(inode->i_cdev, struct pcdev_private_data, cdev);
 
-    // /* store the private data to be used in other file ops*/
-    // filp->private_data = pcdev_data;
+    /* store the private data to be used in other file ops*/
+    filp->private_data = pcdev_data;
 
-    // /* check permissions */
-    // ret = check_permission(pcdev_data->perm ,filp->f_mode);
+    /* check permissions */
+    ret = check_permission(pcdev_data->pdata.perm ,filp->f_mode);
     
-    // (!ret) ? pr_info("Open was successful!\n") : pr_info("Open was unsuccessful!\n");
+    (!ret) ? pr_info("Open was successful!\n") : pr_info("Open was unsuccessful!\n");
     return 0;
 }
 
