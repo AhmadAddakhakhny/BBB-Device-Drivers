@@ -177,3 +177,27 @@ kfree(k);
 kzfree(); // same as kfree()
 krealloc(); // resize heap by allocating another place with a new size
 ```
+### What is the alternative way of allocating a device in the heap?
+1. in simple terms, it's an alternative safe way to allocate memory in heap, to avoid memory leak.
+2. offload the management of free-ing the heap after a device/driver being removed
+3. devm_kmalloc(); is an alternative function as once the device/driver un-loaded, its heap allocation would be free-ed automatically.
+4. this way know as resource managed api
+
+### What are resource managed functions?
+1. it's group of functions/APIs, which shall be used to ease resource managemet
+2. it's used to manage **struct device *dev** instances allocation
+3. it avoids the developer from writing **goto** keywords
+```C
+// Example
+kmalloc();
+kfree();
+    devm_kmalloc();
+
+gpiod_get(); // allocate
+gpiod_put(); // de-allocate
+    devm_gpiod_get();
+
+request_irq()
+free_irq()
+    devm_request_irq();
+```

@@ -48,6 +48,8 @@ static int __init pcdev_platform_init(void) {
     pr_info("Device setup module inserted \n");
     platform_device_register(&platform_pcdev_1);
     platform_device_register(&platform_pcdev_2);
+    // platform_pcdev: it should be a pointer of array of platform_device to allocate number of devices, in one line
+    // platform_add_devices(platform_pcdev, NO_OF_DEVICES);
 
     return 0;
 }
@@ -57,6 +59,7 @@ static void __exit pcdev_platform_exit(void) {
     pr_info("Device setup module removed \n");
     platform_device_unregister(&platform_pcdev_1);
     platform_device_unregister(&platform_pcdev_2);
+    // Remark: un-register all added devices
 }
 
 module_init(pcdev_platform_init);
