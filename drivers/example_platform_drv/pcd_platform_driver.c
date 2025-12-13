@@ -1,9 +1,10 @@
-#include<linux/module.h>
-#include<linux/kernel.h>
-#include<linux/fs.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
-#include<linux/platform_device.h>
+#include <linux/platform_device.h>
+#include <linux/mod_devicetable.h>
 #include "platform_data.h"
 
 
@@ -23,6 +24,11 @@ struct pcdrv_private_data {
     struct device* pcd_device;
 };
 struct pcdrv_private_data pcdrv_data;
+
+struct platform_device_id pcdevs_ids[] = {
+    [0] = {.name = "pcdev-A1x"},
+    [1] = {.name = "pcdev-B1x"}
+};
 
 /* Function prototypes */
 int pcd_platform_driver_probe (struct platform_device* dev);
@@ -193,16 +199,14 @@ int pcd_platform_driver_probe (struct platform_device* pdev) {
     pdata = (struct pcdev_platform_data*)dev_get_platdata(&pdev->dev);
     if(!pdata) {
         pr_info("No platform data available\n");
-        ret = -EINVAL;
-        goto out;
+        return -EINVAL;
     }
 
     /* 2. Dynamically allocate memory for the device private data */
     dev_data = devm_kzalloc(&pdev->dev, sizeof(*dev_data), GFP_KERNEL);
     if(!dev_data) {
         pr_info("Can't allocate memory\n");
-        ret = -EINVAL;
-        goto out;
+        return -ENOMEM;
     }
     dev_data->pdata.size = pdata->size;
     dev_data->pdata.perm = pdata->perm;
@@ -215,8 +219,7 @@ int pcd_platform_driver_probe (struct platform_device* pdev) {
     dev_data->buffer = devm_kzalloc(&pdev->dev, dev_data->pdata.size, GFP_KERNEL);
     if(!dev_data->buffer) {
         pr_info("Can't allocate memory\n");
-        ret = -EINVAL;
-        goto dev_data_free;
+        return -ENOMEM;
     }
 
     /* 4. Get device number */
@@ -230,7 +233,6 @@ int pcd_platform_driver_probe (struct platform_device* pdev) {
     ret = cdev_add(&dev_data->cdev, dev_data->device_num, 1);
     if (ret < 0) {
         pr_err("Device registeration to VFS failed!\n");
-        goto buffer_free;
     }
 
     /* 6. Create device file for the detected platform device */
@@ -238,7 +240,8 @@ int pcd_platform_driver_probe (struct platform_device* pdev) {
     if(IS_ERR(pcdrv_data.pcd_device)) {
         pr_err("Device file creation failed!\n");
         ret = PTR_ERR(pcdrv_data.pcd_device);
-        goto cdev_del;
+        cdev_del(&dev_data->cdev);
+        return ret;
     }
     // 7. Expose the device data to the remove method in order to de-allocate heap memory
     // pdev->dev.driver_data = dev_data;
@@ -246,17 +249,6 @@ int pcd_platform_driver_probe (struct platform_device* pdev) {
     dev_set_drvdata(&pdev->dev, dev_data);
     pr_info("Device is detected\n");
     return 0;
-    
-    /* 8. Error handling */
-cdev_del:
-    cdev_del(&dev_data->cdev);
-buffer_free:
-    devm_kfree(&pdev->dev, dev_data->buffer);
-dev_data_free:
-    devm_kfree(&pdev->dev, dev_data);
-out:
-    pr_info("Device probe failed\n");
-    return ret;
 }
 
 int pcd_platform_driver_remove(struct platform_device* pdev) {
@@ -274,8 +266,9 @@ int pcd_platform_driver_remove(struct platform_device* pdev) {
 struct platform_driver pcd_platform_driver = {
     .probe = pcd_platform_driver_probe,
     .remove = pcd_platform_driver_remove,
-    .driver = {
-        .name = "pseudo-char-device"
+    .id_table = pcdevs_ids,
+        .driver = {
+        .name = "pseudo-char-device" // default name, used as fallback
     }
 };
 

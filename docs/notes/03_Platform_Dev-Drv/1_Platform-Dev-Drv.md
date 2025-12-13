@@ -201,3 +201,30 @@ request_irq()
 free_irq()
     devm_request_irq();
 ```
+---
+### Platform device driver matching using platform device ids?
+> a method used to ensure that the driver is able to support different devices, as there might be a sonsor with different models, but I should let the driver able to support all of them
+1. there are different platform_devices with different names, different nodes
+2. I should let the driver able to support all of them
+3. to resolve this, initialize id_table attribute of the struct platform_driver with all models
+```C
+struct platform_device_id {
+    const char *name;
+    // it's used for configuration purposes if needed, so make it an index of a lookup table
+    long    driver_data; 
+}
+
+struct platform_device_id pcdevs_ids[] = {
+    [0] = {.name = "pcdev-A1x"},
+    [1] = {.name = "pcdev-B1x"}
+};
+```
+> Note: device matching takes place by 1st checking DT nodes, id, then fallback to default
+---
+
+### Use this MACRO to minimize your code base
+> it can be used only if the __init and __exit would be compoed out of platform_driver_register() or platform_driver_unregister()  
+> in that case you don't need to implement the __init or __exit
+```C
+module_platform_driver(__platform_driver);
+```
