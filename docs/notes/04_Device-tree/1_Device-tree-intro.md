@@ -150,3 +150,11 @@ sensor48 {
     • should begin with a character in the range 'a' to 'z'
     • use dash "-" instead of underscore "_
 ```
+---
+### 15. How to perform platform_match between a driver and a device node?
+```C
+static int platform_match(struct device *dev, struct device_driver *drv);
+```
+1. internally, linux stores each device node in a **device** structure
+2. initialize the **compatible** attribute inside the driver to be matched with **compatible** property of the device node
+3. 

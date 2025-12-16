@@ -1,0 +1,15 @@
+/ {
+    pcdev-1 {
+        bbb,compatible = "pcdev-A1x";
+        bbb,size = <512>;
+        bbb,device-serial-num = "PCDEV1XXXABC123";
+        bbb,perm = <0x11>;
+    };
+
+    pcdev-2 {
+        bbb,compatible = "pcdev-B1x";
+        bbb,size = <1024>;
+        bbb,device-serial-num = "PCDEV2XXXABC123";
+        bbb,perm = <0x11>;
+    };
+};
