@@ -26,6 +26,14 @@ BUILD_DIR := $(SRC_DIR)/builds/$(ARCH)/$(DD)
 INSTALL_DIR := $(SRC_DIR)/install
 INSTALL_PREFIX := $(INSTALL_DIR)/$(ARCH)
 
+# Device Tree sources
+DTS_DIR := $(SRC_DIR)/dts
+DTS_OVERLAY_DIR := $(DTS_DIR)/overlays
+DTS := $(DTS_OVERLAY_DIR)/$(DD).dts
+DTB_OUT_DIR := $(SRC_DIR)/builds/$(ARCH)/dts
+DTBO := $(DTB_OUT_DIR)/$(DD).dtbo
+
+
 # Select kernel directory and cross compiler based on ARCH
 ifeq ($(ARCH),arm)
     KDIR := $(KDIR_SRC)
@@ -80,4 +88,27 @@ install: all
 	@mkdir -p $(INSTALL_PREFIX)
 	@cp -v $(BUILD_DIR)/*.ko $(INSTALL_PREFIX)/
 
-.PHONY: all prep clean install
+# Build device tree overlay (ARM only)
+dt: $(DTBO)
+
+$(DTBO): $(DTS)
+ifeq ($(ARCH),arm)
+	@echo "=============================================="
+	@echo " Building Device Tree Overlay"
+	@echo " Source : $<"
+	@echo " Output : $@"
+	@echo "=============================================="
+	@mkdir -p $(DTB_OUT_DIR)
+	dtc -@ -I dts -O dtb -o $@ $<
+else
+	@echo "Skipping DT build (ARCH=$(ARCH))"
+endif
+
+install-dt: dt
+ifeq ($(ARCH),arm)
+	@echo "Installing DT overlay to $(INSTALL_PREFIX)/dt"
+	@mkdir -p $(INSTALL_PREFIX)/dt
+	@cp -v $(DTBO) $(INSTALL_PREFIX)/dt/
+endif
+
+.PHONY: all prep clean install dt install-dt
