@@ -37,3 +37,20 @@ One of Shuah's first actions as a maintainer was to request that her tree be add
 ### Sybsystem Maintainers
 > Each major subsystem has its own tree and designated maintainer(s).
 ![alt text](imgs/image3.png)
+---
+
+## Patches
+### What is a patch?
+> $ git format-patch -1 --pretty=fuller **COMMIT-SHA**  
+> it gives you a compelete information about the change  
+1. Commit ID: SHA-1 hash
+2. Commit header: subsystem:sub-driver: do_func() return path OR subsystem/sub-driver: do_func() return path  
+2.1. usbip:usbip_host: cleanup do_rebind() return path  
+2.2. usbip/usbip_host: cleanup do_rebind() return path  
+3. Commit log: answers in details the what and why?
+4. Author: name, email address as configured in .gitconfig.  
+4.1. P.S. the Signed-off-by should match the address from which you send patches.  
+5. AuthorDate: time-date of a commit (comes from dev-computer time system)
+6. Commit: commiter's name and email.
+7. CommitDate: the time-date of applying this patch to the subsystem tree.
+8. signed-off-by: Developers certify the patch to be their original work or have the right to pass it on as an open source patch.
