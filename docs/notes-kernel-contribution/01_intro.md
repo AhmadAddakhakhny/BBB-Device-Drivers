@@ -130,3 +130,55 @@ Including the patch version history when sending a re-worked patch is required. 
 Do not send new patch versions as a reply to a previous version. Start a new thread for each version of a patch. An example description of what changed is: "Changes since v3: Added null check for <variable name> as suggested by <name>." You can see a patch example with version history for the v2 version.
 https://patchwork.kernel.org/project/linux-kselftest/patch/20190926224014.28910-1-skhan@linuxfoundation.org/
 ```
+---
+## Linux Kernel Contributor Covenant Code of Conduct
+> contributors and maintainers pledge to foster an open and welcoming community to participate in and become part of.  
+> For complains: conduct@kernel.org  
+
+## LICENSE
+> GPL-2
+---
+## Configuring Development System
+> 1. install any Linux distro
+> 2. make the boot partion 3GB
+> 3. install following tools
+``
+sudo apt-get install build-essential vim git cscope libncurses-dev libssl-dev bison flex
+sudo apt-get install git-email
+others: https://www.kernel.org/doc/html/latest/process/changes.html
+``
+
+## Email client 
+### Configuration
+1. it's recommended to send patches and respond to emails using email client **git send-email**
+2. steps to config your email-client: https://www.kernel.org/doc/html/latest/process/email-clients.html
+```bash
+[sendemail]
+	smtpserver = smtp.gmail.com
+	smtpserverport = 587
+	smtpencryption = tls
+	smtpuser = ahmed.addakhakhny@gmail.com
+	smtppass = abcd efgh ijkl mnop
+```
+
+### Things to remember
+1. Bottom post: Never top post in your response. Top posting is writing a message above the original text while responding to an email. Add your response at the bottom of the original text. Bottom posting makes reading and following review comments on a patch easier.
+
+2. Inline post: When reviewing or responding to a patch, deleting or stripping parts of the message you are not replying to is a good practice, and makes it easier to follow the responses in the thread.
+
+3. No HTML format: Disable compose messages in HTML format. Patches sent using HTML format will be automatically rejected by the development mailing lists.
+
+4. No attachments: Do not send patches as attachments.
+In general, avoid attachments. Some exceptions are kernel logs or configuration files when reporting bugs.
+---
+
+## Git Commands
+```bash
+# Create a patch file
+git format-patch -1 <commit ID>
+
+# check those scripts
+# 1. scripts/get_maintainer.pl
+# 2. scripts/checkpatch.pl
+# tbd: git clone git://git.kernel.org/pub/scm/linux/kernel/git/shuah/linux-kselftest.git
+```
