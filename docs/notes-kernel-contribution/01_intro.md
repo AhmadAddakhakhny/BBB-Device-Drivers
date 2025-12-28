@@ -171,7 +171,69 @@ others: https://www.kernel.org/doc/html/latest/process/changes.html
 4. No attachments: Do not send patches as attachments.
 In general, avoid attachments. Some exceptions are kernel logs or configuration files when reporting bugs.
 ---
+## Clone linux workspace
+1. **mainline:** git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+2. **stable:** git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+3. **kselftest:** git://git.kernel.org/pub/scm/linux/kernel/git/shuah/linux-kselftest.git
 
+### What is the difference between mainline and stable trees?
+1. **mainline:** it's the development tree where developers contripute to it daily for feature and bugs dev.
+2. **stable:** it's the release tree where being backported by crucial bug fixes only.
+
+### Build Your First Kernel
+1. Go to linux/stable/tree
+2. Copy the configuration for current kernel from /boot: "i.e. config-6.8.0-90-generic" to **.config**  
+2.1. cp /boot/config-6.8.0-90-generic .config  
+3. Compile the kernel
+```bash
+# 1. Generate a kernel configuration file based on the courrent configuration
+make oldconfig 
+OR 
+make olddefconfig # avoid answering the question, accept the default
+
+# OR
+# 2. Generate a kernel configuration file based on the currently loaded modules on your system
+lsmod > tmp/my-lsmod
+make LSMOD=/tmp/my-lsmod localmodconfig
+
+make -j3 all
+```
+
+### Installing Your First Kernel
+1. Once the kernel compilation is complete, install the new kernel
+2. Store dmesg logs and compare and look for regressions and new errors, if any.
+2. Reboot
+```bash
+# This command will install the new kernel and run update-grub to add the new kernel to the grub menu.
+su -c "make modules_install install"
+
+# dmesg logs ... [-t option allows logs without timestamps]
+dmesg -t > dmesg_current
+dmesg -t -k > dmesg_kernel
+dmesg -t -l emerg > dmesg_current_emerg
+dmesg -t -l alert > dmesg_current_alert
+dmesg -t -l crit > dmesg_current_crit
+dmesg -t -l err > dmesg_current_err
+dmesg -t -l warn > dmesg_current_warn
+dmesg -t -l info > dmesg_current_info
+```
+
+### Disable secure boot temporarly
+1. mokutil --sb-state
+2. sudo mokutil --disable-validation
+3. mok password: 12345678 /* type the digit based upon the asked index */
+4. sudo mokutil --enable-validation /* enable the secure boot if you need but you won't be able to boot unsigned kernels */
+
+### Booting the kernel with logs
+1. go to /etc/default/grup
+2. Uncomment GRUB_TIMEOUT and set it to 10: GRUB_TIMEOUT=10
+3. Comment out GRUB_TIMEOUT_STYLE=hidden
+4. GRUB_CMDLINE_LINUX="earlyprintk=vga"
+5. sudo update-grub
+---
+
+
+---
 ## Git Commands
 ```bash
 # Create a patch file
